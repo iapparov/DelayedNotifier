@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Delayed Notifier</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    h1 { text-align: center; }
+    form { margin-bottom: 30px; }
+    label { display: block; margin-top: 10px; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; }
+    button { padding: 10px 20px; margin-top: 10px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f0f0f0; }
+    #idActions { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>Delayed Notifier</h1>
+
+  <form id="notifyForm">
+    <label>
+      Канал:
+      <select name="channel" required>
+        <option value="email">Email</option>
+        <option value="telegram">Telegram</option>
+      </select>
+    </label>
+
+    <label>
+      Сообщение:
+      <textarea name="message" required></textarea>
+    </label>
+
+    <label>
+      Получатель:
+      <input type="text" name="recipient" placeholder="email или chat_id" required />
+    </label>
+
+    <label>
+      Дата и время отправки:
+      <input type="datetime-local" name="send_at" required />
+    </label>
+
+    <button type="submit">Создать уведомление</button>
+  </form>
+
+  <h2>Работа с конкретным уведомлением по ID</h2>
+  <div id="idActions">
+    <label>
+      Введите ID уведомления:
+      <input type="text" id="notifId" placeholder="UUID уведомления" />
+    </label>
+    <button onclick="getStatus()">Получить статус</button>
+    <button onclick="deleteById()">Удалить уведомление</button>
+    <p id="statusOutput"></p>
+  </div>
+
+  <script>
+    const form = document.getElementById('notifyForm');
+    const tableBody = document.querySelector('#notificationsTable tbody');
+    const statusOutput = document.getElementById('statusOutput');
+    const BASE_URL = 'http://localhost:8080';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        channel: form.channel.value,
+        message: form.message.value,
+        recipient: form.recipient.value,
+        send_at: new Date(form.send_at.value).toISOString()
+      };
+      try {
+        const res = await fetch(`${BASE_URL}/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Ошибка при создании уведомления');
+        const result = await res.json();
+        alert('Уведомление создано с ID: ' + result.id);
+        form.reset();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    async function deleteNotification(id) {
+      try {
+        const res = await fetch(`${BASE_URL}/notify/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Не удалось удалить уведомление');
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function getStatus() {
+    const id = document.getElementById('notifId').value.trim();
+    if (!id) return alert('Введите ID уведомления');
+    try {
+        const res = await fetch(`${BASE_URL}/notify/${id}`);
+        if (!res.ok) throw new Error('Не удалось получить статус уведомления');
+
+        // Получаем строку напрямую
+        const status = await res.text(); 
+        statusOutput.textContent = `Статус уведомления: ${status}`;
+    } catch (err) {
+        statusOutput.textContent = 'Ошибка: ' + err.message;
+    }
+    }
+
+    async function deleteById() {
+      const id = document.getElementById('notifId').value.trim();
+      if (!id) return alert('Введите ID уведомления');
+      try {
+        const res = await fetch(`${BASE_URL}/notify/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Не удалось удалить уведомление');
+        statusOutput.textContent = 'Уведомление успешно удалено';
+      } catch (err) {
+        statusOutput.textContent = 'Ошибка: ' + err.message;
+      }
+    }
+
+    setInterval(fetchNotifications, 5000);
+  </script>
+</body>
+</html>

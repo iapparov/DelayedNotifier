@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+  RabbitMQ:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+  Redis:
+    image: redis:7
+    container_name: redis
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  pg_data:
+  rabbitmq_data:
+  redis_data:
+
+  # To start the services, run: docker-compose up -d
+  # To stop the services, run: docker-compose down

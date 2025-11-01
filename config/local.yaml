@@ -1,0 +1,40 @@
+server:
+  host: "localhost"
+  port: 8080
+
+logger:
+  level: "debug"
+
+gin:
+  mode: "release"
+
+rabbitmq:
+  host: "localhost"
+  port: 5672
+  exchange: "notifications"
+  queue_name: "notifications_queue"
+
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+  ttl: "30s"
+  cache_size: 1000
+
+db_config:
+  postgres:
+    host: "localhost"
+    port: 5433
+    ssl_mode: "disable"
+  max_open_conns: 5
+  max_idle_conns: 10
+  conn_max_lifetime: "100s"
+
+mail:
+  smtp_host: "smtp.gmail.com"
+  smtp_port: 587
+
+retry_strategy:
+  attempts: 3
+  delay: "1s"
+  backoffs: 2
