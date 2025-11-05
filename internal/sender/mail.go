@@ -1,25 +1,25 @@
 package sender
 
 import (
+	"delayedNotifier/internal/app"
+	"delayedNotifier/internal/config"
 	"fmt"
-	"DelayedNotifier/internal/config"
-	"DelayedNotifier/internal/app"
 	"net/smtp"
 )
 
 type EmailChannel struct {
-	smtpHost string
-	smtpPort int
-	smtpEmail  string
-	smtp string
+	smtpHost  string
+	smtpPort  int
+	smtpEmail string
+	smtp      string
 }
 
 func NewEmailChannel(cfg *config.AppConfig) *EmailChannel {
 	return &EmailChannel{
-		smtpHost: cfg.MailConfig.SMTPHost,
-		smtpPort: cfg.MailConfig.SMTPPort,
-		smtpEmail:  cfg.MailConfig.SMTPEmail,
-		smtp: cfg.MailConfig.SMTPPassword,
+		smtpHost:  cfg.MailConfig.SMTPHost,
+		smtpPort:  cfg.MailConfig.SMTPPort,
+		smtpEmail: cfg.MailConfig.SMTPEmail,
+		smtp:      cfg.MailConfig.SMTPPassword,
 	}
 }
 
@@ -37,4 +37,3 @@ func (s *EmailChannel) Send(notification *app.Notification) error {
 	}
 	return nil
 }
-

@@ -1,0 +1,175 @@
+definitions:
+  app.ChannelType:
+    enum:
+    - email
+    - telegram
+    type: string
+    x-enum-varnames:
+    - Email
+    - Telegram
+  app.Notification:
+    properties:
+      channel:
+        $ref: '#/definitions/app.ChannelType'
+      created_at:
+        type: string
+      id:
+        type: string
+      message:
+        type: string
+      recipient:
+        type: string
+      send_at:
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/app.StatusType'
+        description: pending, sent, failed, canceled
+      updated_at:
+        type: string
+    type: object
+  app.NotificationRequest:
+    properties:
+      channel:
+        enum:
+        - email
+        - telegram
+        type: string
+      message:
+        type: string
+      recipient:
+        type: string
+      send_at:
+        type: string
+    required:
+    - channel
+    - message
+    - recipient
+    - send_at
+    type: object
+  app.StatusType:
+    enum:
+    - pending
+    - sent
+    - failed
+    - canceled
+    type: string
+    x-enum-varnames:
+    - Pending
+    - Sent
+    - Failed
+    - Canceled
+  web.ErrorResponse:
+    properties:
+      error:
+        example: invalid input data
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /notify:
+    post:
+      consumes:
+      - application/json
+      description: Создает новое уведомление (Email, Telegram) и сохраняет его в БД
+        и Redis
+      parameters:
+      - description: Notification to create
+        in: body
+        name: notification
+        required: true
+        schema:
+          $ref: '#/definitions/app.NotificationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created notification
+          schema:
+            $ref: '#/definitions/app.Notification'
+        "400":
+          description: Invalid input data
+          schema:
+            $ref: '#/definitions/web.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/web.ErrorResponse'
+        "503":
+          description: Service unavailable (DB or cache)
+          schema:
+            $ref: '#/definitions/web.ErrorResponse'
+      summary: Create Notification
+      tags:
+      - notifications
+  /notify/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет уведомление по ID из кэша и базы данных
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Notification deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid notification ID
+          schema:
+            $ref: '#/definitions/web.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/web.ErrorResponse'
+        "503":
+          description: Service unavailable
+          schema:
+            $ref: '#/definitions/web.ErrorResponse'
+      summary: Delete Notification
+      tags:
+      - notifications
+    get:
+      consumes:
+      - application/json
+      description: Получает уведомление по ID (из кэша или базы данных)
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Notification object
+          schema:
+            $ref: '#/definitions/app.Notification'
+        "400":
+          description: Invalid notification ID
+          schema:
+            $ref: '#/definitions/web.ErrorResponse'
+        "404":
+          description: Notification not found
+          schema:
+            $ref: '#/definitions/web.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/web.ErrorResponse'
+        "503":
+          description: Service unavailable
+          schema:
+            $ref: '#/definitions/web.ErrorResponse'
+      summary: Get Notification
+      tags:
+      - notifications
+swagger: "2.0"

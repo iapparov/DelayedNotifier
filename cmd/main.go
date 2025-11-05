@@ -1,14 +1,19 @@
+// @title           DelayedNotifier API
+// @version         1.0
+// @description     API для сервиса отложенных уведомлений
+// @BasePath        /
+
 package main
 
 import (
-	"DelayedNotifier/internal/broker"
-	"DelayedNotifier/internal/config"
-	"DelayedNotifier/internal/consumer"
-	"DelayedNotifier/internal/db"
-	"DelayedNotifier/internal/di"
-	"DelayedNotifier/internal/redis"
-	"DelayedNotifier/internal/sender"
-	"DelayedNotifier/internal/web"
+	"delayedNotifier/internal/broker"
+	"delayedNotifier/internal/config"
+	"delayedNotifier/internal/consumer"
+	"delayedNotifier/internal/db"
+	"delayedNotifier/internal/di"
+	"delayedNotifier/internal/redis"
+	"delayedNotifier/internal/sender"
+	"delayedNotifier/internal/web"
 	wbzlog "github.com/wb-go/wbf/zlog"
 	"go.uber.org/fx"
 )
@@ -21,11 +26,11 @@ func main() {
 			db.NewPostgres,
 
 			redis.NewRedisService,
-			func (db *db.Postgres) redis.StorageProvider{
+			func(db *db.Postgres) redis.StorageProvider {
 				return db
 			},
 
-			func (db *db.Postgres) broker.StorageProvider{
+			func(db *db.Postgres) broker.StorageProvider {
 				return db
 			},
 
@@ -34,13 +39,13 @@ func main() {
 			sender.NewSenderRegistry,
 
 			consumer.NewConsumer,
-			func (db *db.Postgres) consumer.StorageProvider {
+			func(db *db.Postgres) consumer.StorageProvider {
 				return db
 			},
-			func (redis *redis.RedisService) consumer.CacheProvider {
+			func(redis *redis.RedisService) consumer.CacheProvider {
 				return redis
 			},
-			
+
 			web.NewNotifyHandler,
 			func(db *db.Postgres) web.StorageProvider {
 				return db
@@ -48,7 +53,6 @@ func main() {
 			func(redis *redis.RedisService) web.CacheProvider {
 				return redis
 			},
-		
 		),
 		fx.Invoke(
 			di.StartHTTPServer,

@@ -1,9 +1,9 @@
 package app
 
 import (
-	"time"
 	"github.com/google/uuid"
 	wbzlog "github.com/wb-go/wbf/zlog"
+	"time"
 )
 
 type StatusType string
@@ -23,14 +23,14 @@ const (
 )
 
 type Notification struct {
-    ID          uuid.UUID `db:"id" json:"id"`
-    Channel     ChannelType `db:"channel" json:"channel"`
-	Recipient   string    `db:"recipient" json:"recipient"`
-    Message     string    `db:"message" json:"message"`
-    SendAt      time.Time `db:"send_at" json:"send_at"`
-    Status      StatusType `db:"status" json:"status"` // pending, sent, failed, canceled
-    CreatedAt   time.Time `db:"created_at" json:"created_at"`
-    UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
+	ID        uuid.UUID   `db:"id" json:"id"`
+	Channel   ChannelType `db:"channel" json:"channel"`
+	Recipient string      `db:"recipient" json:"recipient"`
+	Message   string      `db:"message" json:"message"`
+	SendAt    time.Time   `db:"send_at" json:"send_at"`
+	Status    StatusType  `db:"status" json:"status"` // pending, sent, failed, canceled
+	CreatedAt time.Time   `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time   `db:"updated_at" json:"updated_at"`
 }
 
 type NotificationRequest struct {

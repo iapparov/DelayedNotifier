@@ -1,25 +1,24 @@
 package consumer
 
 import (
-	"DelayedNotifier/internal/app"
-	"DelayedNotifier/internal/config"
-	"DelayedNotifier/internal/sender"
 	"context"
+	"delayedNotifier/internal/app"
+	"delayedNotifier/internal/config"
+	"delayedNotifier/internal/sender"
 	"encoding/json"
-	"sync"
-
+	"fmt"
 	wbrabbit "github.com/wb-go/wbf/rabbitmq"
 	"github.com/wb-go/wbf/retry"
 	wbzlog "github.com/wb-go/wbf/zlog"
-	"fmt"
+	"sync"
 )
 
 type RabbitConsumerService struct {
 	consumer *wbrabbit.Consumer
-	cfg *config.RetrysConfig
-	repo StorageProvider
-	cache CacheProvider
-	sender map[app.ChannelType]sender.Sender
+	cfg      *config.RetrysConfig
+	repo     StorageProvider
+	cache    CacheProvider
+	sender   map[app.ChannelType]sender.Sender
 }
 
 type StorageProvider interface {
@@ -30,17 +29,17 @@ type CacheProvider interface {
 	SaveNotification(notif *app.Notification) error
 }
 
-func NewConsumer (cfg *config.AppConfig, sender *sender.SenderRegistry, repo StorageProvider, cache CacheProvider) (*RabbitConsumerService, error){
+func NewConsumer(cfg *config.AppConfig, sender *sender.SenderRegistry, repo StorageProvider, cache CacheProvider) (*RabbitConsumerService, error) {
 	config := wbrabbit.ConsumerConfig{
-		Queue: cfg.RabbitmqConfig.QueueName,
-		Consumer: "",
-		AutoAck: false,
+		Queue:     cfg.RabbitmqConfig.QueueName,
+		Consumer:  "",
+		AutoAck:   false,
 		Exclusive: false,
-		NoLocal: false,
-		NoWait: false,
-		Args: nil,
+		NoLocal:   false,
+		NoWait:    false,
+		Args:      nil,
 	}
-		rabbitDSN := fmt.Sprintf(
+	rabbitDSN := fmt.Sprintf(
 		"amqp://%s:%s@%s:%d/",
 		cfg.RabbitmqConfig.User,
 		cfg.RabbitmqConfig.Password,
@@ -62,11 +61,11 @@ func NewConsumer (cfg *config.AppConfig, sender *sender.SenderRegistry, repo Sto
 	return &RabbitConsumerService{consumer: wbrabbit.NewConsumer(ch, &config), cfg: &cfg.RetrysConfig, sender: sender.All(), repo: repo, cache: cache}, nil
 }
 
-func (c *RabbitConsumerService) Start(ctx context.Context){
+func (c *RabbitConsumerService) Start(ctx context.Context) {
 	var wg sync.WaitGroup
 	msgChan := make(chan []byte)
 	wg.Add(1)
-	go func(){
+	go func() {
 		defer wg.Done()
 		defer close(msgChan)
 		err := c.consumer.ConsumeWithRetry(msgChan, retry.Strategy{Attempts: c.cfg.Attempts, Delay: c.cfg.Delay, Backoff: c.cfg.Backoffs})
@@ -74,7 +73,7 @@ func (c *RabbitConsumerService) Start(ctx context.Context){
 			wbzlog.Logger.Debug().Msg("Failed to Consume RabbitMQ")
 		}
 	}()
-	
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -107,9 +106,21 @@ func (c *RabbitConsumerService) Start(ctx context.Context){
 						Str("channel", string(notif.Channel)).
 						Msg("Unknown notification channel")
 
-					c.repo.UpdateNotificationStatus(notif.ID.String(), app.Failed)
+					if err := c.repo.UpdateNotificationStatus(notif.ID.String(), app.Failed); err != nil {
+						wbzlog.Logger.Error().
+							Err(err).
+							Str("id", notif.ID.String()).
+							Msg("Failed to update notification status to FAILED in DB")
+					}
+
 					notif.MarkAsFailed()
-					c.cache.SaveNotification(&notif)
+
+					if err := c.cache.SaveNotification(&notif); err != nil {
+						wbzlog.Logger.Error().
+							Err(err).
+							Str("id", notif.ID.String()).
+							Msg("Failed to update notification in cache (FAILED)")
+					}
 					continue
 				}
 
@@ -119,15 +130,33 @@ func (c *RabbitConsumerService) Start(ctx context.Context){
 						Str("id", notif.ID.String()).
 						Msg("Failed to send notification")
 
-					c.repo.UpdateNotificationStatus(notif.ID.String(), app.Failed)
+					if err := c.repo.UpdateNotificationStatus(notif.ID.String(), app.Failed); err != nil {
+						wbzlog.Logger.Error().
+							Err(err).
+							Str("id", notif.ID.String()).
+							Msg("Failed to update notification status to FAILED in DB")
+					}
+
 					notif.MarkAsFailed()
-					c.cache.SaveNotification(&notif)
+
+					if err := c.cache.SaveNotification(&notif); err != nil {
+						wbzlog.Logger.Error().
+							Err(err).
+							Str("id", notif.ID.String()).
+							Msg("Failed to update notification in cache (FAILED)")
+					}
 					continue
 				}
 
-				c.repo.UpdateNotificationStatus(notif.ID.String(), app.Sent)
+				if err := c.repo.UpdateNotificationStatus(notif.ID.String(), app.Sent); err != nil {
+					wbzlog.Logger.Error().Err(err).Msg("Failed to update notification status to SENT in DB")
+				}
+
 				notif.MarkAsSent()
-				c.cache.SaveNotification(&notif)
+
+				if err := c.cache.SaveNotification(&notif); err != nil {
+					wbzlog.Logger.Error().Err(err).Msg("Failed to save notification to cache (SENT)")
+				}
 
 				wbzlog.Logger.Info().
 					Str("id", notif.ID.String()).
@@ -135,6 +164,6 @@ func (c *RabbitConsumerService) Start(ctx context.Context){
 			}
 		}
 	}()
-	
+
 	wg.Wait()
 }

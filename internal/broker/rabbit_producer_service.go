@@ -1,27 +1,31 @@
 package broker
 
 import (
-	"DelayedNotifier/internal/config"
-	"DelayedNotifier/internal/app"
+	"context"
+	"delayedNotifier/internal/app"
+	"delayedNotifier/internal/config"
+	"encoding/json"
 	"fmt"
 	wbrabbit "github.com/wb-go/wbf/rabbitmq"
 	"github.com/wb-go/wbf/retry"
 	wbzlog "github.com/wb-go/wbf/zlog"
-	"encoding/json"
-	"context"
 	"time"
 )
 
 type RabbitService struct {
-	client *wbrabbit.Connection
-	channel *wbrabbit.Channel
-	publisher *wbrabbit.Publisher
-	cfg *config.RetrysConfig
-	repo StorageProvider
+	client    *wbrabbit.Connection
+	channel   *wbrabbit.Channel
+	publisher publisherIface
+	cfg       *config.RetrysConfig
+	repo      StorageProvider
 }
 
 type StorageProvider interface {
 	GetNotifications(status app.StatusType, batchSize int, lastId string) ([]*app.Notification, error)
+}
+
+type publisherIface interface {
+	PublishWithRetry(body []byte, routingKey, contentType string, strategy retry.Strategy, options ...wbrabbit.PublishingOptions) error
 }
 
 func NewRabbitProducerService(cfg *config.AppConfig, repo StorageProvider) (*RabbitService, error) {
@@ -88,7 +92,7 @@ func (s *RabbitService) Close() error {
 		if err != nil {
 			return err
 		}
-    return nil
+		return nil
 	}, retry.Strategy{Attempts: s.cfg.Attempts, Delay: s.cfg.Delay, Backoff: s.cfg.Backoffs})
 	if err != nil {
 		wbzlog.Logger.Error().Err(err).Msg("Failed to close RabbitMQ connection")
@@ -119,14 +123,14 @@ func (s *RabbitService) Publish(notification *app.Notification) error {
 	}
 
 	wbzlog.Logger.Info().
-	Str("queue", "notifications_queue").
-	Str("id", notification.ID.String()).
-	Msg("Notification published to RabbitMQ")
+		Str("queue", "notifications_queue").
+		Str("id", notification.ID.String()).
+		Msg("Notification published to RabbitMQ")
 	return nil
 }
 
 func (s *RabbitService) Channel() *wbrabbit.Channel {
-    return s.channel
+	return s.channel
 }
 
 func (s *RabbitService) UploadFromDB(ctx context.Context) {

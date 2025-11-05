@@ -2,10 +2,9 @@ package config
 
 import (
 	"fmt"
+	wbfconfig "github.com/wb-go/wbf/config"
 	"os"
 	"time"
-
-	wbfconfig "github.com/wb-go/wbf/config"
 )
 
 type AppConfig struct {
@@ -13,17 +12,17 @@ type AppConfig struct {
 	LoggerConfig   loggerConfig   `mapstructure:"logger"`
 	RabbitmqConfig RabbitmqConfig `mapstructure:"rabbitmq"`
 	RedisConfig    redisConfig    `mapstructure:"redis"`
-	DBConfig dbConfig 			  `mapstructure:"db_config"`
+	DBConfig       dbConfig       `mapstructure:"db_config"`
 	TelegramConfig telegramConfig `mapstructure:"telegram"`
 	MailConfig     mailConfig     `mapstructure:"mail"`
-	RetrysConfig	RetrysConfig  `mapstructure:"retry_strategy"`
-	GinConfig		ginConfig      `mapstructure:"gin"`
+	RetrysConfig   RetrysConfig   `mapstructure:"retry_strategy"`
+	GinConfig      ginConfig      `mapstructure:"gin"`
 }
 
-type RetrysConfig struct{
-	Attempts int `mapstructure:"attempts" default:"3"`
-  	Delay time.Duration `mapstructure:"delay" default:"1s"`
-  	Backoffs float64 `mapstructure:"backoffs" default:"2"`
+type RetrysConfig struct {
+	Attempts int           `mapstructure:"attempts" default:"3"`
+	Delay    time.Duration `mapstructure:"delay" default:"1s"`
+	Backoffs float64       `mapstructure:"backoffs" default:"2"`
 }
 
 type ginConfig struct {
@@ -40,11 +39,11 @@ type loggerConfig struct {
 }
 
 type RabbitmqConfig struct {
-	Host     string `mapstructure:"host" default:"localhost"`
-	Port     int    `mapstructure:"port" default:"5672"`
-	User     string `mapstructure:"user" default:"guest"`
-	Password string `mapstructure:"password" default:"guest"`
-	Exchange string `mapstructure:"exchange" default:"notifications"`
+	Host      string `mapstructure:"host" default:"localhost"`
+	Port      int    `mapstructure:"port" default:"5672"`
+	User      string `mapstructure:"user" default:"guest"`
+	Password  string `mapstructure:"password" default:"guest"`
+	Exchange  string `mapstructure:"exchange" default:"notifications"`
 	QueueName string `mapstructure:"queue_name" default:"notifications_queue"`
 }
 
@@ -67,11 +66,11 @@ type postgresConfig struct {
 }
 
 type dbConfig struct {
-	Master postgresConfig `mapstructure:"postgres"`
-	Slaves []postgresConfig `mapstructure:"slaves"`
-	MaxOpenConns    int `mapstructure:"maxOpenConns"`
-	MaxIdleConns    int `mapstructure:"maxIdleConns"`
-	ConnMaxLifetime time.Duration `mapstructure:"connMaxLifetime"`
+	Master          postgresConfig   `mapstructure:"postgres"`
+	Slaves          []postgresConfig `mapstructure:"slaves"`
+	MaxOpenConns    int              `mapstructure:"maxOpenConns"`
+	MaxIdleConns    int              `mapstructure:"maxIdleConns"`
+	ConnMaxLifetime time.Duration    `mapstructure:"connMaxLifetime"`
 }
 
 type telegramConfig struct {
@@ -81,7 +80,7 @@ type telegramConfig struct {
 type mailConfig struct {
 	SMTPHost     string `mapstructure:"smtp_host" default:""`
 	SMTPPort     int    `mapstructure:"smtp_port" default:"587"`
-	SMTPEmail     string `mapstructure:"smtp_user" default:""`
+	SMTPEmail    string `mapstructure:"smtp_user" default:""`
 	SMTPPassword string `mapstructure:"smtp_password" default:""`
 }
 
@@ -102,7 +101,7 @@ func NewAppConfig() (*AppConfig, error) {
 	if err := cfg.LoadConfigFiles(appConfigFilePath); err != nil {
 		return nil, fmt.Errorf("failed to load config files: %w", err)
 	}
-	
+
 	var appCfg AppConfig
 	if err := cfg.Unmarshal(&appCfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
@@ -122,6 +121,6 @@ func NewAppConfig() (*AppConfig, error) {
 	appCfg.MailConfig.SMTPEmail = os.Getenv("MAIL_SMTP_USER")
 	appCfg.MailConfig.SMTPPassword = os.Getenv("MAIL_SMTP_PASSWORD")
 	fmt.Println(appCfg.DBConfig)
-	
+
 	return &appCfg, nil
 }

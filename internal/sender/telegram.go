@@ -1,20 +1,18 @@
 package sender
 
 import (
+	"delayedNotifier/internal/app"
+	"delayedNotifier/internal/config"
 	"fmt"
-	"log"
-	"strconv"
-	"DelayedNotifier/internal/config"
-	"DelayedNotifier/internal/app"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	wbzlog "github.com/wb-go/wbf/zlog"
+	"log"
+	"strconv"
 )
 
 type TelegramChannel struct {
 	bot *tgbotapi.BotAPI
 }
-
 
 func NewTelegramChannel(cfg *config.AppConfig) *TelegramChannel {
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramConfig.BotToken)
@@ -39,7 +37,6 @@ func (t *TelegramChannel) Send(notification *app.Notification) error {
 	return err
 }
 
-
 func (t *TelegramChannel) listenForStartCommand() {
 	log.Println("Telegram listener started...")
 	u := tgbotapi.NewUpdate(0)
@@ -63,10 +60,14 @@ func (t *TelegramChannel) listenForStartCommand() {
 				fmt.Sprintf("👋 Привет, %s!\n\nТвой chat_id: `%d`\nОтправь его в приложение, чтобы получать уведомления.",
 					username, chatID))
 
-			t.bot.Send(msg)
-			
+			if _, err := t.bot.Send(msg); err != nil {
+				wbzlog.Logger.Error().
+					Err(err).
+					Msg("Failed to send Telegram message")
+			}
+
 			//TODO: сохранить chatID и username в БД или кэш
-			// _ = saveUserToDB(username, chatID)  
+			// _ = saveUserToDB(username, chatID)
 		}
 	}
 }

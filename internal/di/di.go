@@ -1,25 +1,24 @@
 package di
 
 import (
-	rabbit "DelayedNotifier/internal/broker"
-	"DelayedNotifier/internal/config"
-	"DelayedNotifier/internal/consumer"
-	"DelayedNotifier/internal/redis"
-	"DelayedNotifier/internal/web"
 	"context"
+	rabbit "delayedNotifier/internal/broker"
+	"delayedNotifier/internal/config"
+	"delayedNotifier/internal/consumer"
+	"delayedNotifier/internal/redis"
+	"delayedNotifier/internal/web"
 	"fmt"
-	"log"
-	"net/http"
-
 	wbgin "github.com/wb-go/wbf/ginext"
 	"go.uber.org/fx"
+	"log"
+	"net/http"
 )
 
 func StartHTTPServer(lc fx.Lifecycle, notifyHandler *web.NotifyHandler, config *config.AppConfig) {
 	router := wbgin.New(config.GinConfig.Mode)
-	
+
 	router.Use(wbgin.Logger(), wbgin.Recovery())
-		router.Use(func(c *wbgin.Context) {
+	router.Use(func(c *wbgin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -27,15 +26,15 @@ func StartHTTPServer(lc fx.Lifecycle, notifyHandler *web.NotifyHandler, config *
 			c.AbortWithStatus(204)
 			return
 		}
-    c.Next()
-})
+		c.Next()
+	})
 
 	web.RegisterRoutes(router, notifyHandler)
 
 	addres := fmt.Sprintf("%s:%d", config.ServerConfig.Host, config.ServerConfig.Port)
 	server := &http.Server{
 		Addr:    addres,
-		Handler: router.Engine, 
+		Handler: router.Engine,
 	}
 
 	lc.Append(fx.Hook{
@@ -74,19 +73,19 @@ func LoadCacheOnStart(lc fx.Lifecycle, c *redis.RedisService, repo redis.Storage
 }
 
 func StartRabitProducer(lc fx.Lifecycle, r *rabbit.RabbitService) {
-		lc.Append(fx.Hook{
+	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			log.Println("Start Rabbit Producer...")
 			producerCtx, cancel := context.WithCancel(context.Background())
 			go r.UploadFromDB(producerCtx)
 
 			lc.Append(fx.Hook{
-                OnStop: func(ctx context.Context) error {
-                    log.Println("Stopping Rabit producer")
-                    cancel() // отменяем consumer
-                    return nil
-                },
-            })
+				OnStop: func(ctx context.Context) error {
+					log.Println("Stopping Rabit producer")
+					cancel() // отменяем consumer
+					return nil
+				},
+			})
 			log.Println("Rabbit Producer started successfully")
 			return nil
 		},
@@ -94,26 +93,25 @@ func StartRabitProducer(lc fx.Lifecycle, r *rabbit.RabbitService) {
 }
 
 func StartRabbitConsumer(lc fx.Lifecycle, r *consumer.RabbitConsumerService) {
-    lc.Append(fx.Hook{
-        OnStart: func(ctx context.Context) error {
-            log.Println("Start Rabbit Consumer...")
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			log.Println("Start Rabbit Consumer...")
 
-            // Используем отдельный контекст для долгоживущей горутины
-            consumerCtx, cancel := context.WithCancel(context.Background())
-            go r.Start(consumerCtx)
+			// Используем отдельный контекст для долгоживущей горутины
+			consumerCtx, cancel := context.WithCancel(context.Background())
+			go r.Start(consumerCtx)
 
-            // Сохраняем cancel для корректного завершения
-            lc.Append(fx.Hook{
-                OnStop: func(ctx context.Context) error {
-                    log.Println("Stopping Rabbit Consumer...")
-                    cancel() // отменяем consumer
-                    return nil
-                },
-            })
+			// Сохраняем cancel для корректного завершения
+			lc.Append(fx.Hook{
+				OnStop: func(ctx context.Context) error {
+					log.Println("Stopping Rabbit Consumer...")
+					cancel() // отменяем consumer
+					return nil
+				},
+			})
 
-            log.Println("Rabbit Consumer started successfully")
-            return nil
-        },
-    })
+			log.Println("Rabbit Consumer started successfully")
+			return nil
+		},
+	})
 }
-

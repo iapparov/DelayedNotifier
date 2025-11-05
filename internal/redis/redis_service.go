@@ -1,12 +1,11 @@
 package redis
 
 import (
-	"DelayedNotifier/internal/app"
-	"DelayedNotifier/internal/config"
 	"context"
+	"delayedNotifier/internal/app"
+	"delayedNotifier/internal/config"
 	"errors"
 	"fmt"
-
 	wbredis "github.com/wb-go/wbf/redis"
 	"github.com/wb-go/wbf/retry"
 	wbzlog "github.com/wb-go/wbf/zlog"
@@ -14,7 +13,7 @@ import (
 
 type RedisService struct {
 	client *wbredis.Client
-	cfg *config.RetrysConfig
+	cfg    *config.RetrysConfig
 }
 
 type StorageProvider interface {
@@ -28,7 +27,7 @@ func NewRedisService(cfg *config.AppConfig) (*RedisService, error) {
 	return &RedisService{client: client, cfg: &cfg.RetrysConfig}, nil
 }
 
-func (r *RedisService) LoadCache(cfg *config.AppConfig, repo StorageProvider) error{
+func (r *RedisService) LoadCache(cfg *config.AppConfig, repo StorageProvider) error {
 	notifications, err := repo.UploadCache(cfg.RedisConfig.CacheSize)
 	if err != nil {
 		wbzlog.Logger.Debug().Msg("Failed to upload cache")
@@ -49,13 +48,13 @@ func (r *RedisService) GetNotification(id string) (*app.Notification, error) {
 	ctx := context.Background()
 	status, err := r.client.GetWithRetry(ctx, retry.Strategy{Attempts: r.cfg.Attempts, Delay: r.cfg.Delay, Backoff: r.cfg.Backoffs}, id)
 	if err != nil {
-			if errors.Is(err, wbredis.NoMatches) {
-				// Ключ просто отсутствует
-				wbzlog.Logger.Debug().
-					Str("id", id).
-					Msg("Notification status not found in Redis")
-				return nil, nil
-			}
+		if errors.Is(err, wbredis.NoMatches) {
+			// Ключ просто отсутствует
+			wbzlog.Logger.Debug().
+				Str("id", id).
+				Msg("Notification status not found in Redis")
+			return nil, nil
+		}
 		wbzlog.Logger.Warn().Err(err).Msg("Failed to get status by id")
 		return nil, err
 	}
@@ -70,12 +69,12 @@ func (r *RedisService) DeleteNotification(id string) error {
 	err := r.client.DelWithRetry(ctx, retry.Strategy{Attempts: r.cfg.Attempts, Delay: r.cfg.Delay, Backoff: r.cfg.Backoffs}, id)
 	if err != nil {
 		if errors.Is(err, wbredis.NoMatches) {
-				// Ключ просто отсутствует
-				wbzlog.Logger.Debug().
-					Str("id", id).
-					Msg("Notification status not found in Redis")
-				return nil
-			}
+			// Ключ просто отсутствует
+			wbzlog.Logger.Debug().
+				Str("id", id).
+				Msg("Notification status not found in Redis")
+			return nil
+		}
 		wbzlog.Logger.Warn().Err(err).Msg("Failed to del status by id")
 		return err
 	}

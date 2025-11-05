@@ -1,21 +1,19 @@
 package db
 
 import (
-	"DelayedNotifier/internal/app"
-	"DelayedNotifier/internal/config"
-	"fmt"
-	"database/sql"
-
-	wbdb "github.com/wb-go/wbf/dbpg"
-	wbzlog "github.com/wb-go/wbf/zlog"
-	"github.com/wb-go/wbf/retry"
-	"time"
 	"context"
+	"database/sql"
+	"delayedNotifier/internal/app"
+	"delayedNotifier/internal/config"
+	"fmt"
+	wbdb "github.com/wb-go/wbf/dbpg"
+	"github.com/wb-go/wbf/retry"
+	wbzlog "github.com/wb-go/wbf/zlog"
+	"time"
 )
 
-
 type Postgres struct {
-	db *wbdb.DB
+	db  *wbdb.DB
 	cfg *config.RetrysConfig
 }
 
@@ -32,12 +30,12 @@ func NewPostgres(cfg *config.AppConfig) (*Postgres, error) {
 	slaveDSNs := make([]string, 0, len(cfg.DBConfig.Slaves))
 	for _, slave := range cfg.DBConfig.Slaves {
 		dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		slave.Host,
-		slave.Port,
-		slave.User,
-		slave.Password,
-		slave.DBName,
+			"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			slave.Host,
+			slave.Port,
+			slave.User,
+			slave.Password,
+			slave.DBName,
 		)
 		slaveDSNs = append(slaveDSNs, dsn)
 	}
@@ -127,7 +125,11 @@ func (p *Postgres) GetNotifications(status app.StatusType, batchSize int, lastID
 		wbzlog.Logger.Error().Err(err).Msg("Failed to execute select notifications query")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			wbzlog.Logger.Error().Err(err).Msg("Failed to close rows")
+		}
+	}()
 
 	var notifications []*app.Notification
 	for rows.Next() {
@@ -182,14 +184,14 @@ func (p *Postgres) GetNotification(id string) (*app.Notification, error) {
 		&notification.Recipient,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows{
+		if err == sql.ErrNoRows {
 			wbzlog.Logger.Info().Str("id", id).Msg("Notification not found")
 			return nil, nil // можно вернуть nil, nil, чтобы явно показать «не найдено»
 		}
 		wbzlog.Logger.Error().Err(err).Msg("Failed to scan notification row")
 		return nil, err
 	}
-	if err = row.Err() ; err != nil {
+	if err = row.Err(); err != nil {
 		wbzlog.Logger.Error().Err(err).Msg("Row iteration error")
 		return nil, err
 	}
@@ -227,7 +229,7 @@ func (p *Postgres) DeleteNotification(id string) error {
 
 	_, err := p.db.ExecWithRetry(ctx, retry.Strategy{Attempts: p.cfg.Attempts, Delay: p.cfg.Delay, Backoff: p.cfg.Backoffs}, query, id)
 	if err != nil {
-		if err == sql.ErrNoRows{
+		if err == sql.ErrNoRows {
 			wbzlog.Logger.Info().Str("id", id).Msg("Notification not found")
 			return nil // можно вернуть nil, чтобы явно показать «не найдено»
 		}
@@ -240,7 +242,7 @@ func (p *Postgres) DeleteNotification(id string) error {
 func (p *Postgres) UploadCache(limit int) ([]*app.Notification, error) {
 
 	ctx := context.Background()
-	
+
 	query := `
 		SELECT id, channel, message, send_at, status, created_at, updated_at, recipient
 		FROM notifications
@@ -255,7 +257,11 @@ func (p *Postgres) UploadCache(limit int) ([]*app.Notification, error) {
 		wbzlog.Logger.Error().Err(err).Msg("Failed to execute select notifications query")
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			wbzlog.Logger.Error().Err(err).Msg("Failed to close rows")
+		}
+	}()
 
 	var notifications []*app.Notification
 	for rows.Next() {

@@ -1,12 +1,12 @@
 package sender
 
 import (
-	"DelayedNotifier/internal/app"
-	"DelayedNotifier/internal/config"
+	"delayedNotifier/internal/app"
+	"delayedNotifier/internal/config"
 )
 
 type SenderRegistry struct {
-    senders map[app.ChannelType]Sender
+	senders map[app.ChannelType]Sender
 }
 
 type Sender interface {
@@ -18,11 +18,11 @@ func NewSenderRegistry(cfg *config.AppConfig) *SenderRegistry {
 
 	senders[app.Telegram] = NewTelegramChannel(cfg)
 	senders[app.Email] = NewEmailChannel(cfg)
-    return &SenderRegistry{
-        senders: senders,
-    }
+	return &SenderRegistry{
+		senders: senders,
+	}
 }
 
 func (r *SenderRegistry) All() map[app.ChannelType]Sender {
-    return r.senders
+	return r.senders
 }
