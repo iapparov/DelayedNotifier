@@ -59,6 +59,7 @@ func main() {
 			di.LoadCacheOnStart,
 			di.StartRabitProducer,
 			di.StartRabbitConsumer,
+			di.ClosePostgresOnStop,
 		),
 	)
 

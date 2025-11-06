@@ -120,7 +120,6 @@ func NewAppConfig() (*AppConfig, error) {
 
 	appCfg.MailConfig.SMTPEmail = os.Getenv("MAIL_SMTP_USER")
 	appCfg.MailConfig.SMTPPassword = os.Getenv("MAIL_SMTP_PASSWORD")
-	fmt.Println(appCfg.DBConfig)
 
 	return &appCfg, nil
 }

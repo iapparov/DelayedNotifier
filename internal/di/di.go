@@ -6,6 +6,7 @@ import (
 	"delayedNotifier/internal/config"
 	"delayedNotifier/internal/consumer"
 	"delayedNotifier/internal/redis"
+	"delayedNotifier/internal/db"
 	"delayedNotifier/internal/web"
 	"fmt"
 	wbgin "github.com/wb-go/wbf/ginext"
@@ -111,6 +112,20 @@ func StartRabbitConsumer(lc fx.Lifecycle, r *consumer.RabbitConsumerService) {
 			})
 
 			log.Println("Rabbit Consumer started successfully")
+			return nil
+		},
+	})
+}
+
+func ClosePostgresOnStop(lc fx.Lifecycle, postgres *db.Postgres) {
+	lc.Append(fx.Hook{
+		OnStop: func(ctx context.Context) error {
+			log.Println("Closing Postgres connections...")
+			if err := postgres.Close(); err != nil {
+				log.Printf("Failed to close Postgres: %v", err)
+				return err
+			}
+			log.Println("Postgres closed successfully")
 			return nil
 		},
 	})

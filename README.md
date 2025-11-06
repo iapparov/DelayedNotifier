@@ -12,6 +12,7 @@
   - **broker/** — продюссер RabbitMQ.
   - **config/** — загрузка конфигурации из YAML.
   - **consumer/** — консьюмер RabbitMQ.
+  - **di/** — реализация зависимостей через UberFX.
   - **db/** — работа с PostgreSQL (CRUD, кэш-загрузка).
   - **redis/** — реализация кэша через Redis.
   - **sender/** — реализация отправки уведомлений (Telegram, Email).
