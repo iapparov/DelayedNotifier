@@ -33,39 +33,34 @@ type Notification struct {
 	UpdatedAt time.Time   `db:"updated_at" json:"updated_at"`
 }
 
-type NotificationRequest struct {
-	Channel   string `json:"channel" binding:"required,oneof=email telegram"`
-	Message   string `json:"message" binding:"required"`
-	Recipient string `json:"recipient" binding:"required"`
-	SendAt    string `json:"send_at" binding:"required,datetime=2006-01-02T15:04:05Z07:00"`
-}
 
-func NewNotification(req NotificationRequest) (*Notification, error) {
-	sendAt, error := time.Parse(time.RFC3339, req.SendAt)
+
+func NewNotification(Channel, Message, Recipient, SendAt string) (*Notification, error) {
+	sendAt, error := time.Parse(time.RFC3339, SendAt)
 
 	if error != nil {
 		wbzlog.Logger.Error().Err(error).Msg("Failed to parse send_at time, defaulting to now")
 		sendAt = time.Now()
 	}
-	if req.Channel != "email" && req.Channel != "telegram" {
-		wbzlog.Logger.Error().Str("channel", req.Channel).Msg("Invalid channel type, defaulting to email")
-		req.Channel = "email"
+	if Channel != "email" && Channel != "telegram" {
+		wbzlog.Logger.Error().Str("channel", Channel).Msg("Invalid channel type, defaulting to email")
+		Channel = "email"
 	}
 
-	if messageLen := len(req.Message); messageLen == 0 || messageLen > 1000 {
+	if messageLen := len(Message); messageLen == 0 || messageLen > 1000 {
 		wbzlog.Logger.Error().Int("message_length", messageLen).Msg("Invalid message length, defaulting to 'No message provided'")
-		req.Message = "No message provided"
+		Message = "No message provided"
 	}
 
-	channel := ChannelType(req.Channel)
+	channel := ChannelType(Channel)
 
 	// Log the channel type for debugging
 	wbzlog.Logger.Debug().Str("channel", string(channel)).Msg("Creating new notification")
 	return &Notification{
 		ID:        uuid.New(),
 		Channel:   channel,
-		Message:   req.Message,
-		Recipient: req.Recipient,
+		Message:   Message,
+		Recipient: Recipient,
 		SendAt:    sendAt,
 		Status:    Pending,
 		CreatedAt: time.Now(),

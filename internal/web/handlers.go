@@ -46,13 +46,13 @@ type ErrorResponse struct {
 // @Failure      500  {object}  ErrorResponse  "Internal server error"
 // @Router       /notify [post]
 func (h *NotifyHandler) CreateNotification(ctx *wbgin.Context) {
-	var req app.NotificationRequest
+	var req NotificationRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, wbgin.H{"error": err.Error()})
 		return
 	}
 
-	notif, err := app.NewNotification(req)
+	notif, err := app.NewNotification(req.Channel, req.Message, req.Recipient, req.SendAt)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, wbgin.H{"error": err.Error()})
 		return

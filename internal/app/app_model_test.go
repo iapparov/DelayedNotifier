@@ -7,60 +7,34 @@ import (
 )
 
 func TestNewNotificationValidInput(t *testing.T) {
-	req := NotificationRequest{
-		Channel:   "email",
-		Message:   "Hello, world!",
-		Recipient: "test@example.com",
-		SendAt:    time.Now().UTC().Format(time.RFC3339),
-	}
 
-	notification, err := NewNotification(req)
+	notification, err := NewNotification("email", "Hello, world!", "test@example.com", time.Now().UTC().Format(time.RFC3339))
 
 	assert.NoError(t, err)
 	assert.NotNil(t, notification)
 	assert.Equal(t, Email, notification.Channel)
-	assert.Equal(t, req.Message, notification.Message)
-	assert.Equal(t, req.Recipient, notification.Recipient)
+	assert.Equal(t, "Hello, world!", notification.Message)
+	assert.Equal(t, "test@example.com", notification.Recipient)
 	assert.Equal(t, Pending, notification.Status)
 	assert.True(t, notification.SendAt.Before(time.Now().Add(1*time.Second)))
 	assert.NotZero(t, notification.ID)
 }
 
 func TestNewNotificationInvalidSendAt(t *testing.T) {
-	req := NotificationRequest{
-		Channel:   "email",
-		Message:   "Invalid time test",
-		Recipient: "test@example.com",
-		SendAt:    "not-a-time",
-	}
-
-	n, err := NewNotification(req)
+	n, err := NewNotification("email", "Invalid time test", "test@example.com", "not-a-time")
 	assert.NoError(t, err)
 	assert.WithinDuration(t, time.Now(), n.SendAt, time.Second*2, "Should default to now when send_at invalid")
 }
 
 func TestNewNotificationInvalidChannel(t *testing.T) {
-	req := NotificationRequest{
-		Channel:   "whatsapp",
-		Message:   "Test message",
-		Recipient: "test@example.com",
-		SendAt:    time.Now().Format(time.RFC3339),
-	}
 
-	n, err := NewNotification(req)
+	n, err := NewNotification("whatsapp", "Test message", "test@example.com", time.Now().Format(time.RFC3339))
 	assert.NoError(t, err)
 	assert.Equal(t, Email, n.Channel, "Should default to email when channel invalid")
 }
 
 func TestNewNotificationInvalidMessageLength(t *testing.T) {
-	req := NotificationRequest{
-		Channel:   "email",
-		Message:   "", // пустое сообщение
-		Recipient: "test@example.com",
-		SendAt:    time.Now().Format(time.RFC3339),
-	}
-
-	n, err := NewNotification(req)
+	n, err := NewNotification("email", "", "test@example.com", time.Now().Format(time.RFC3339))
 	assert.NoError(t, err)
 	assert.Equal(t, "No message provided", n.Message)
 }
@@ -71,14 +45,7 @@ func TestNewNotificationLongMessage(t *testing.T) {
 		longMsg[i] = 'a'
 	}
 
-	req := NotificationRequest{
-		Channel:   "email",
-		Message:   string(longMsg),
-		Recipient: "test@example.com",
-		SendAt:    time.Now().Format(time.RFC3339),
-	}
-
-	n, err := NewNotification(req)
+	n, err := NewNotification("email", string(longMsg), "test@example.com", time.Now().Format(time.RFC3339))
 	assert.NoError(t, err)
 	assert.Equal(t, "No message provided", n.Message)
 }
