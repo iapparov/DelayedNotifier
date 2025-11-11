@@ -33,8 +33,6 @@ type Notification struct {
 	UpdatedAt time.Time   `db:"updated_at" json:"updated_at"`
 }
 
-
-
 func NewNotification(Channel, Message, Recipient, SendAt string) (*Notification, error) {
 	sendAt, error := time.Parse(time.RFC3339, SendAt)
 

@@ -1,9 +1,9 @@
 package web
 
 import (
-	wbgin "github.com/wb-go/wbf/ginext"
+	_ "delayedNotifier/docs"
 	httpSwagger "github.com/swaggo/http-swagger"
-    _ "delayedNotifier/docs"
+	wbgin "github.com/wb-go/wbf/ginext"
 )
 
 func RegisterRoutes(engine *wbgin.Engine, handler *NotifyHandler) {

@@ -1,7 +1,6 @@
 package web
 
-
-type NotificationRequest struct { 
+type NotificationRequest struct {
 	Channel   string `json:"channel" binding:"required,oneof=email telegram"`
 	Message   string `json:"message" binding:"required"`
 	Recipient string `json:"recipient" binding:"required"`
